@@ -1,0 +1,12 @@
+# Environments
+.venv/
+__pycache__/
+*.pyc
+
+# Local data — PDFs and Qdrant's on-disk storage shouldn't be versioned
+data/pdfs/*
+!data/pdfs/.gitkeep
+qdrant_storage/
+
+# OS cruft
+.DS_Store
