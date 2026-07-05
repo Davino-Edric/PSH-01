@@ -1,7 +1,7 @@
 import streamlit as st
 from pathlib import Path
 from ingest import ingest_pdf, PDF_DIR  # reuse your existing constant
-from query import ask
+from query import ask, ask_stream, retrieve
 
 st.set_page_config(page_title="PSH-01", layout="wide")
 st.title("PSH-01: PENS Study Hub")
@@ -36,6 +36,10 @@ with chat_tab:
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
+            if msg["role"] == "assistant" and "sources" in msg:
+                with st.expander("Sources"):
+                    for chunk in msg["sources"]:
+                        st.caption(f"{chunk.payload['filename']} — p.{chunk.payload['page']} (score: {chunk.score:.3f})")
 
     if question := st.chat_input("Ask something..."):
         st.session_state.messages.append({"role": "user", "content": question})
@@ -45,14 +49,13 @@ with chat_tab:
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
                 try:
-                    result = ask(question)
+                    chunks = retrieve(question)          # get sources BEFORE streaming starts
+                    full_answer = st.write_stream(ask_stream(question, chunks=chunks))
+
+                    with st.expander("Sources"):
+                        for chunk in chunks:
+                            st.caption(f"{chunk.payload['filename']} — p.{chunk.payload['page']} (score: {chunk.score:.3f})")
+
+                    st.session_state.messages.append({"role": "assistant", "content": full_answer, "sources": chunks})
                 except Exception as e:
                     st.error(f"Something went wrong while answering: {e}")
-                    result = None
-
-            if result:
-                st.write(result["answer"])
-                with st.expander("Sources"):
-                    for s in result["sources"]:
-                        st.caption(f"{s['filename']} — p.{s['page']} (score: {s['score']})")
-                st.session_state.messages.append({"role": "assistant", "content": result["answer"]})
