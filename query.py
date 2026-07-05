@@ -1,6 +1,7 @@
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
 import requests
+import json
 
 COLLECTION = "PSH-01_Documents"  
 OLLAMA_URL = "http://localhost:11434/api/chat"
@@ -88,6 +89,24 @@ def ask(question: str):
         "answer": answer,
         "sources": sources
     }
+    
+def ask_stream(question: str, chunks=None, top_k: int = TOP_K):
+    if chunks is None:
+        chunks = retrieve(question, top_k=top_k)  # fallback if called without pre-fetched chunks
+
+    messages = build_prompt(question, chunks)
+
+    response = requests.post(OLLAMA_URL, json={
+        "model": OLLAMA_MODEL,
+        "messages": messages,
+        "stream": True
+    }, stream=True)
+    response.raise_for_status()
+
+    for line in response.iter_lines():
+        if line:
+            chunk = json.loads(line)
+            yield chunk["message"]["content"]
 
 if __name__ == "__main__":
     ask("Apa itu Random Forest dan bagaimana cara kerjanya?")
