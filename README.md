@@ -25,8 +25,9 @@ Most RAG tutorials assume a GPU and an OpenAI API key. This project deliberately
 
 ```bash
 # 1. Clone and set up the environment
-git clone https://github.com/Davino-Edric/<repo-name>.git
-cd <repo-name>
+git clone https://github.com/Davino-Edric/PSH-01.git
+cd PSH-01
+mkdir -p data/pdfs
 python -m venv .venv
 source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 pip install -r requirements.txt
