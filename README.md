@@ -68,6 +68,26 @@ These are documented tradeoffs, not bugs waiting to be fixed — each was a deli
 └── requirements.txt
 ```
 
+## Streamlit UI Documentations
+
+**Upload tab**
+![Upload tab](docs/screenshots/upload_tab.png)
+
+**Chat tab with source citations**
+![Chat tab](docs/screenshots/chat_tab.png)
+
+## Future Work
+
+The current system covers the core RAG loop end-to-end. The items below are 
+deliberately out of scope for v1 — noted here as a roadmap, not oversights.
+
+| Improvement | Why | Effort |
+|---|---|---|
+| **Multilingual embedding model** (e.g. `paraphrase-multilingual-MiniLM-L12-v2`) | Would resolve the ID/EN spelling-variant gap noted in Known Limitations, at the cost of the batch-speed advantage `bge-small-en-v1.5` currently has. Deferred pending a re-benchmark to confirm the quality/speed tradeoff is worth it. | Low — config + re-embed existing corpus |
+| **Chatbot-style UI/UX** (vs. current Streamlit layout) | Streamlit was the right choice for fast iteration during development; a dedicated chat frontend (e.g. custom React/Next.js, or a framework like Chainlit) would read as more production-realistic for demo purposes. | Medium — new frontend layer, same backend |
+| **Query understanding + re-ranking + answer verification** | Right now retrieval is a single embed-and-search step with no query rewriting, no re-ranking of retrieved chunks, and no check that the generated answer is actually grounded in what was retrieved. Adding an LLM-driven query planner, a re-ranking model, and a verification pass would meaningfully improve answer quality — but each stage adds latency, which is a real constraint on CPU-only inference. Worth prototyping once the core system has more real usage to justify it. | High — effectively a v2 architecture (agentic RAG) |
+| **Inline, chunk-level citations** | Currently citations are per-answer (a list of sources used), not per-sentence. Pinpointing exactly which retrieved chunk supports which specific claim in the generated answer would be a meaningfully stronger trust signal, but requires either structured prompting to force the LLM to tag its own claims, or a separate alignment step post-generation. | Medium-High — prompt engineering + possible new pipeline stage |
+
 ## What's next
 
 This module is scoped to stand alone, but its ingestion script signature and Qdrant schema are kept clean enough to be wired into future PSH sub-projects (automated document intake, note-taking integration) without a rewrite.
