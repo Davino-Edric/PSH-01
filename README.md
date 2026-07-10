@@ -1,4 +1,4 @@
-# PSH-01: PENS Study Hub — Local RAG Core
+  # PSH-01: Personal Study Hub — Local RAG Core
 
 A fully local, offline Retrieval-Augmented Generation (RAG) system for querying academic PDF documents. Drop a PDF in, ask questions about it, get answers with page-level citations — no cloud API calls, running entirely on consumer hardware.
 
@@ -71,10 +71,10 @@ These are documented tradeoffs, not bugs waiting to be fixed — each was a deli
 ## Streamlit UI Documentations
 
 **Upload tab**
-![Upload tab](docs/screenshots/upload_tab.png)
+![Upload tab](repo_attachments/upload_tab.png)
 
 **Chat tab with source citations**
-![Chat tab](docs/screenshots/chat_tab.png)
+![Chat tab](repo_attachments/chat_tab.png)
 
 ## Future Work
 
