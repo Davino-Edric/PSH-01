@@ -38,3 +38,26 @@
 - accept_multiple_files=True changes uploaded_file into a list; wrapped each
   file's ingest_pdf() call in its own try/except so one bad file doesn't halt
   the batch.
+
+# v.1.1 Milestone logs
+
+## Milestone 1: Benchmarking and profiling of bge-small-en-1.5 vs multilingual-e5-base
+
+Context: Tested on a 51 page sample pdf about machine learning terms that are mixed language (AI Generated, still yet to find a proper messy mixed-language journal / paper) seeded from term_pairs.json (both documents are on data/profiling)
+
+- Steady state latency is 1.82-1.85x of bge-small-en's steady state latency
+- Idle RAM sits at 337MiB, way smaller than the expected boundary of 1.5GiB
+- Peak system RAM usage reaches 99% for all runs of e5-base, reaching 15.34-15.4 out of 15.41 GiB of RAM
+- A static term pair test based on term_pairs.json was used as a nother form of accuracy check 
+  for the two embedding models. bge-small-en-1.5 got 6/12 term pairs correct, whilst e5-base got 11/12 pairs correct,
+  of which the misses on e5-base was a near-miss with only 0.0081 margin
+
+Verdict: Pass with documented caveats, proceeding to Milestone 2:
+
+## Milestone 2: Changing the Qdrant collection to use 768 dims size (previously 384, this is related to bge-small and e5-base dimension size)
+
+Context: To accommodate for e5-base 768 dimension size, the collection must be dropped and recreated with 768 dimension size change.
+
+Verdict: Pass, dropped previous collection along with any points upserted into it.
+
+## Milestone 3:
