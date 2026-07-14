@@ -1,35 +1,37 @@
 {
   "model": "intfloat/multilingual-e5-base",
-  "timestamp": "2026-07-13T11:19:32.036614+00:00",
+  "timestamp": "2026-07-14T03:00:43.244185+00:00",
   "hardware": "Ryzen 7 5700H / Vega iGPU / 16GB single-channel RAM",
   "idle_ram": {
-    "ram_before_load_mb": 473.2,
-    "ram_after_load_mb": 810.6,
-    "idle_footprint_mb": 337.3,
+    "ram_before_load_mb": 479.1,
+    "ram_after_load_mb": 817.9,
+    "idle_footprint_mb": 338.8,
     "within_1_5gb_target": true
   },
   "embedding_latency": {
     "total_chunks": 158,
     "cold_start_batch_size": 16,
-    "cold_start_total_s": 4.552,
-    "cold_start_ms_per_chunk": 284.52,
+    "cold_start_total_s": 4.889,
+    "cold_start_ms_per_chunk": 305.58,
     "steady_state_chunks": 142,
-    "steady_state_total_s": 33.398,
-    "steady_state_ms_per_chunk": 235.19,
-    "ratio_vs_bge_small_baseline": 1.82,
+    "steady_state_total_s": 34.058,
+    "steady_state_ms_per_chunk": 239.85,
+    "ratio_vs_bge_small_baseline": 1.85,
     "within_3x_boundary": true
   },
   "concurrency_with_ollama": {
     "ollama_reachable_before": true,
     "ollama_reachable_after": true,
-    "ollama_models_before": [],
+    "ollama_models_before": [
+      "qwen2.5:3b-instruct-q4_K_M"
+    ],
     "ollama_models_after": [
       "qwen2.5:3b-instruct-q4_K_M"
     ],
     "possible_eviction_detected": false,
     "ollama_chat_status": 200,
-    "embedding_batch_elapsed_s": 21.561,
-    "peak_system_ram_used_gb": 15.37,
+    "embedding_batch_elapsed_s": 22.738,
+    "peak_system_ram_used_gb": 15.34,
     "system_total_ram_gb": 15.41,
     "under_16gb_ceiling": true
   },

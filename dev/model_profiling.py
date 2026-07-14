@@ -3,17 +3,7 @@ PSH-01 v1.1 — Pre-Flight Profiling Script (Milestone 1)
 
 Measures intfloat/multilingual-e5-base on the target hardware
 (Ryzen 7 5700H / Vega iGPU / 16GB single-channel RAM) before committing
-to the migration, per PRD §2. Writes real logged numbers to
-profiling_results.json — paste the relevant figures into NOTES.md.
-
-Run this FROM THE PSH-01 REPO ROOT, with:
-  - Qdrant not required for this script (profiling doesn't touch Qdrant)
-  - Ollama running with qwen2.5:3b-instruct-q4_K_M already pulled
-  - A 50-page mixed-language sample PDF at data/profiling/sample_50page.pdf
-  - A term-pairs file at data/profiling/term_pairs.json (starter provided separately)
-
-Before running: send Ollama one throwaway chat message so the model is
-actually resident — otherwise the concurrency test measures an idle process.
+to the migration, per PRD §2. 
 """
 
 import gc
@@ -47,7 +37,6 @@ OLLAMA_MODEL = "qwen2.5:3b-instruct-q4_K_M"
 RAM_CEILING_GB = 16.0
 IDLE_RAM_TARGET_MB = 1500.0  # PRD acceptable boundary: < 1.5 GB
 
-# Paste your v1.0 measured bge-small ms/chunk here to get the 3.0x ratio check.
 BASELINE_LATENCY_MS_PER_CHUNK = 129.53
 
 
