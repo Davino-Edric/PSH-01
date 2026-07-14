@@ -12,7 +12,8 @@ PDF_DIR = Path("data/pdfs")
 COLLECTION = "PSH-01_Documents"
 CHUNK_SIZE = 512
 CHUNK_OVERLAP = 50
-EMBED_MODEL = "BAAI/bge-small-en-v1.5"
+EMBED_MODEL = "intfloat/multilingual-e5-base" # Changed from Beijing Academy's bge-small-en to e5-base
+BATCH_SIZE = 16
 
 client = QdrantClient(host="localhost", port=6333)
 model = SentenceTransformer(EMBED_MODEL)
@@ -48,11 +49,14 @@ def ingest_pdf(pdf_path: Path):
     print(f"split into {len(nodes)} chunk(s)")
     
     ingested_at = datetime.now(timezone.utc).isoformat()
+    
+    texts = [node.get_content() for node in nodes]
+    prefixed_texts = [f'passage: {t}' for t in texts]
+    all_vectors = model.encode(prefixed_texts, batch_size=BATCH_SIZE).tolist()
+    
     points = []
     
-    for i, node in enumerate(nodes):
-        text = node.get_content()
-        vectors = model.encode(text).tolist()
+    for i, (node, text,vectors) in enumerate(zip(nodes,texts,all_vectors)):
         page = node.metadata.get("page_label", "unknown")  # Assuming the metadata has a page label; adjust as necessary
         
         points.append(PointStruct(
