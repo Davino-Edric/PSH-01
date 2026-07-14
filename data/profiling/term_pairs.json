@@ -1,0 +1,14 @@
+[
+  {"id": "Regresi Linier", "en": "Linear Regression"},
+  {"id": "Regresi Logistik", "en": "Logistic Regression"},
+  {"id": "Pohon Keputusan", "en": "Decision Tree"},
+  {"id": "Hutan Acak", "en": "Random Forest"},
+  {"id": "Klasterisasi", "en": "Clustering"},
+  {"id": "Validasi Silang", "en": "Cross Validation"},
+  {"id": "Gradien Turun", "en": "Gradient Descent"},
+  {"id": "Jaringan Saraf Tiruan", "en": "Artificial Neural Network"},
+  {"id": "Data Pelatihan", "en": "Training Data"},
+  {"id": "Data Uji", "en": "Test Data"},
+  {"id": "Ekstraksi Fitur", "en": "Feature Extraction"},
+  {"id": "Reduksi Dimensi", "en": "Dimensionality Reduction"}
+]
