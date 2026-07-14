@@ -60,4 +60,10 @@ Context: To accommodate for e5-base 768 dimension size, the collection must be d
 
 Verdict: Pass, dropped previous collection along with any points upserted into it.
 
-## Milestone 3:
+## Milestone 3: Changing the pipeline scripts to use e5-base
+
+Context: To use e5-base, ingest.py and query.py must be given a prefix of passage and query respectively
+and also given a batch size (16 in this case)
+
+- query.py logged changes: Changed embedding models, added prefix to query in retrieve()
+
