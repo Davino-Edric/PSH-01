@@ -1,0 +1,127 @@
+{
+  "model": "intfloat/multilingual-e5-base",
+  "timestamp": "2026-07-13T11:19:32.036614+00:00",
+  "hardware": "Ryzen 7 5700H / Vega iGPU / 16GB single-channel RAM",
+  "idle_ram": {
+    "ram_before_load_mb": 473.2,
+    "ram_after_load_mb": 810.6,
+    "idle_footprint_mb": 337.3,
+    "within_1_5gb_target": true
+  },
+  "embedding_latency": {
+    "total_chunks": 158,
+    "cold_start_batch_size": 16,
+    "cold_start_total_s": 4.552,
+    "cold_start_ms_per_chunk": 284.52,
+    "steady_state_chunks": 142,
+    "steady_state_total_s": 33.398,
+    "steady_state_ms_per_chunk": 235.19,
+    "ratio_vs_bge_small_baseline": 1.82,
+    "within_3x_boundary": true
+  },
+  "concurrency_with_ollama": {
+    "ollama_reachable_before": true,
+    "ollama_reachable_after": true,
+    "ollama_models_before": [],
+    "ollama_models_after": [
+      "qwen2.5:3b-instruct-q4_K_M"
+    ],
+    "possible_eviction_detected": false,
+    "ollama_chat_status": 200,
+    "embedding_batch_elapsed_s": 21.561,
+    "peak_system_ram_used_gb": 15.37,
+    "system_total_ram_gb": 15.41,
+    "under_16gb_ceiling": true
+  },
+  "cross_lingual_resolution": {
+    "total_pairs": 12,
+    "passed": 11,
+    "pass_rate": 0.917,
+    "detail": [
+      {
+        "id_term": "Regresi Linier",
+        "en_term": "Linear Regression",
+        "cosine_similarity": 0.8532,
+        "max_distractor_similarity": 0.8373,
+        "correctly_closest": true
+      },
+      {
+        "id_term": "Regresi Logistik",
+        "en_term": "Logistic Regression",
+        "cosine_similarity": 0.8749,
+        "max_distractor_similarity": 0.8244,
+        "correctly_closest": true
+      },
+      {
+        "id_term": "Pohon Keputusan",
+        "en_term": "Decision Tree",
+        "cosine_similarity": 0.8678,
+        "max_distractor_similarity": 0.8074,
+        "correctly_closest": true
+      },
+      {
+        "id_term": "Hutan Acak",
+        "en_term": "Random Forest",
+        "cosine_similarity": 0.7992,
+        "max_distractor_similarity": 0.7895,
+        "correctly_closest": true
+      },
+      {
+        "id_term": "Klasterisasi",
+        "en_term": "Clustering",
+        "cosine_similarity": 0.8535,
+        "max_distractor_similarity": 0.8205,
+        "correctly_closest": true
+      },
+      {
+        "id_term": "Validasi Silang",
+        "en_term": "Cross Validation",
+        "cosine_similarity": 0.8395,
+        "max_distractor_similarity": 0.8208,
+        "correctly_closest": true
+      },
+      {
+        "id_term": "Gradien Turun",
+        "en_term": "Gradient Descent",
+        "cosine_similarity": 0.8532,
+        "max_distractor_similarity": 0.8246,
+        "correctly_closest": true
+      },
+      {
+        "id_term": "Jaringan Saraf Tiruan",
+        "en_term": "Artificial Neural Network",
+        "cosine_similarity": 0.8005,
+        "max_distractor_similarity": 0.8086,
+        "correctly_closest": false
+      },
+      {
+        "id_term": "Data Pelatihan",
+        "en_term": "Training Data",
+        "cosine_similarity": 0.9175,
+        "max_distractor_similarity": 0.8763,
+        "correctly_closest": true
+      },
+      {
+        "id_term": "Data Uji",
+        "en_term": "Test Data",
+        "cosine_similarity": 0.8973,
+        "max_distractor_similarity": 0.8609,
+        "correctly_closest": true
+      },
+      {
+        "id_term": "Ekstraksi Fitur",
+        "en_term": "Feature Extraction",
+        "cosine_similarity": 0.8477,
+        "max_distractor_similarity": 0.808,
+        "correctly_closest": true
+      },
+      {
+        "id_term": "Reduksi Dimensi",
+        "en_term": "Dimensionality Reduction",
+        "cosine_similarity": 0.873,
+        "max_distractor_similarity": 0.8251,
+        "correctly_closest": true
+      }
+    ]
+  }
+}
