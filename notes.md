@@ -66,4 +66,10 @@ Context: To use e5-base, ingest.py and query.py must be given a prefix of passag
 and also given a batch size (16 in this case)
 
 - query.py logged changes: Changed embedding models, added prefix to query in retrieve()
+- changed the ingestion to a per node-loop that collect the node then batch encode it
+- prefix only used for encoding only, no prefix ever gets into the LLM / Citations 
+- Result: 13/15, and — worth being specific here rather than just "sometimes bleeds" 
+both misses ranked #2 by a narrow margin (~0.01–0.02), not buried
+- Both misses are the same failure shape: the question didn't specify the distinguishing detail between two topically-adjacent chunks
+- e5-base is tested on only english when it's supposed to be cross language indo-eng, however it's ability on a 50 page profiling proves it works okay with cross language
 
