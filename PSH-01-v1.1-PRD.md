@@ -58,6 +58,10 @@ Run a controlled profiling pass on a 50-page mixed-language sample PDF, on the t
 - [ ] **Defensive fallback:** files placed directly in `data/pdfs/` root (no course subfolder) receive `course: "uncategorized"` automatically — no forced manual migration for legacy-style placement
 - [ ] Legacy Qdrant data note: since the 384→768 migration requires a full collection drop, any previously ingested PDFs are simply re-ingested from scratch under v1.1 — no separate backfill step needed
 
+### SQLite ingestion queue (new, supports PSH-02)
+- [ ] Create a lightweight SQLite queue table (e.g. `ingestion_queue`) if it doesn't already exist
+- [ ] On successful completion of ingest.py's upsert to Qdrant, write a row: `filename`, `status: "COMPLETED"`, timestamp
+
 ---
 
 ## 4. Known Limitations Carried Forward / Resolved
