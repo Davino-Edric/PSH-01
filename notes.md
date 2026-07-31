@@ -63,7 +63,7 @@ Verdict: Pass, dropped previous collection along with any points upserted into i
 ## Milestone 3: Changing the pipeline scripts to use e5-base
 
 Context: To use e5-base, ingest.py and query.py must be given a prefix of passage and query respectively
-and also given a batch size (16 in this case)
+and also given a batch size (16 in this case).
 
 - query.py logged changes: Changed embedding models, added prefix to query in retrieve()
 - changed the ingestion to a per node-loop that collect the node then batch encode it
@@ -72,4 +72,12 @@ and also given a batch size (16 in this case)
 both misses ranked #2 by a narrow margin (~0.01–0.02), not buried
 - Both misses are the same failure shape: the question didn't specify the distinguishing detail between two topically-adjacent chunks
 - e5-base is tested on only english when it's supposed to be cross language indo-eng, however it's ability on a 50 page profiling proves it works okay with cross language
+
+## Milestone 4: Inferring course_tag from subfolder within root folder (data/pdfs/course_tag/xxx.pdf)
+
+Context: Getting course_tag to be added as a metadata in the Qdrant paylouad, this little update aims to adds more context to the chunks payload. This milestone is mostly to accommodate for PSH-02, Obsidian Brain Graph, need for clustering and summarizing topics across documents.
+
+- created a new function get_course_tag() to scan folders within root dir to get course name (mainly a path extraction function)
+- make ingest_pdf() to have course_tag params and updated make_point_id() to include the course_tag for the point id (and subsequently changed the PointStruct that uses make_point_id())
+- ingest_all() got a glob -> rglob change, nothing more
 

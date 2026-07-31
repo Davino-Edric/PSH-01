@@ -19,9 +19,28 @@ client = QdrantClient(host="localhost", port=6333)
 model = SentenceTransformer(EMBED_MODEL)
 splitter = SentenceSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
 
+def get_course_tag(pdf_path: Path,pdf_root: Path = PDF_DIR) -> str:
+    resolved_path = pdf_path.resolve()
+    resolved_root = pdf_root.resolve()
+    
+    try:
+        relative_path = resolved_path.relative_to(resolved_root)
+    except ValueError:
+        return "uncategorized"
+    
+    parts = relative_path.parts
+    if len(parts) > 2:
+        print(f'WARNING! DEEP NESTING FOR Course Tag:{pdf_path.name}, using {parts[0]}')
+        return parts[0]
+    elif len(parts) <= 1:
+        return 'uncategorized'
+    else:
+        return parts[0]
+    
+
 # Making a unique point ID based on filename, page number, and chunk index (So if re-ingested, it will overwrite the previous point)
-def make_point_id(filename: str, page: int, chunk_index: int) -> str:
-    return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{filename}_{page}_{chunk_index}"))
+def make_point_id(course_tag: str, filename: str, page: int, chunk_index: int) -> str:
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{course_tag}_{filename}_{page}_{chunk_index}"))
 
 def is_front_matter(page_label: str) -> bool:
     roman = {"i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x"}
@@ -29,7 +48,9 @@ def is_front_matter(page_label: str) -> bool:
 
 # In ingest_pdf(), after loading docs:
 
-def ingest_pdf(pdf_path: Path):
+def ingest_pdf(pdf_path: Path, course_tag: str | None = None):
+    if course_tag is None:
+        course_tag = get_course_tag(pdf_path=pdf_path)
     docs = SimpleDirectoryReader(input_files=[str(pdf_path)]).load_data()
     print(f"  Loaded {len(docs)} page(s) before filtering")
 
@@ -60,10 +81,11 @@ def ingest_pdf(pdf_path: Path):
         page = node.metadata.get("page_label", "unknown")  # Assuming the metadata has a page label; adjust as necessary
         
         points.append(PointStruct(
-            id=make_point_id(pdf_path.name,page,i),
+            id=make_point_id(course_tag, pdf_path.name, page, i),
             vector=vectors,
             payload={
                 "filename": pdf_path.name,
+                "course": course_tag,
                 "page":page,
                 "chunk_index": i,
                 "chunk_text": text,
@@ -75,7 +97,7 @@ def ingest_pdf(pdf_path: Path):
     print(f"upserted {len(points)} point(s) to the collection")
     
 def ingest_all():
-    pdfs = sorted(PDF_DIR.glob("*.pdf"))
+    pdfs = sorted(PDF_DIR.rglob("*.pdf"))
     
     if not pdfs:
         print(f"No PDFs found in {PDF_DIR}:")
