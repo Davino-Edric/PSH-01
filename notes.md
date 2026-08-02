@@ -81,3 +81,28 @@ Context: Getting course_tag to be added as a metadata in the Qdrant paylouad, th
 - make ingest_pdf() to have course_tag params and updated make_point_id() to include the course_tag for the point id (and subsequently changed the PointStruct that uses make_point_id())
 - ingest_all() got a glob -> rglob change, nothing more
 
+### Milestone 4 Test: Putting different documents on edge-cases of different folders
+
+Objective of test:
+- Collision test: Same document name, different folder directory collision check (make sure they're tagged different and not trashed, having different uuid5 too)
+- Deep nesting, if there's another folder inside a course_tag folder(i.e pdfs/course_tag/deep_folder/materials.pdf), it will warn of deep nesting
+and label the materials based on the course_tag not based on deep_folder.
+- Root level document (placed in pdfs, not pdfs/course_folder) is categorized as "uncategorized"
+
+Test Result:
+- Collision test: success, behaved as should be
+- Deep Nesting test: success, behaved as should be
+- Root Level category test: success, behaved as should be
+
+note: there's some bug left over from Milestone 4 which will be reviewed again after Milestone 5 is finished. Of which teh details of bug include:
+- Citation offset (when manually reviewing citations to source, page may drift 5-10~ pages); This bug was found during citation source inspection
+- Same printed number, different actual pages (mutiple pages having the same page number at the bottom of the page, misprint) will make some vectors
+pointing to the same page even though it's content are different; Bug was found when inspecitng collection under visualization using Qdrant Dashboard (observed a cluster of point with empty text payload)
+- Undetected text, Some Code Snippets and Graphical text aren't scanned and taken as text for points payload; Bug was found when inspecting collection under visualization using Qdrant Dashboard (observed a cluster of point with empty text payload)
+
+## Milestone 5: Creating SQLite ledger to keep track of which documents have been successfully embedded and stored in the Collection
+
+Context: This part of the update for PSH-01 is designed to accommodate for PSH-02 design which needs Milestone 4 and 5 to work properly.
+This ledger is a "trigger" for PSH-02 system to see which documents are embedded into the Collection and to retrieve their payload.
+
+
