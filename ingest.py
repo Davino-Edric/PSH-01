@@ -2,6 +2,8 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+import sqlite3
+
 from llama_index.core import SimpleDirectoryReader
 from llama_index.core.node_parser import SentenceSplitter
 from sentence_transformers import SentenceTransformer
@@ -12,12 +14,34 @@ PDF_DIR = Path("data/pdfs")
 COLLECTION = "PSH-01_Documents"
 CHUNK_SIZE = 512
 CHUNK_OVERLAP = 50
+MIN_CHUNK_CHARS = 10
 EMBED_MODEL = "intfloat/multilingual-e5-base" # Changed from Beijing Academy's bge-small-en to e5-base
 BATCH_SIZE = 16
+DB_PATH = Path("data/psh_ledger.db")
 
 client = QdrantClient(host="localhost", port=6333)
 model = SentenceTransformer(EMBED_MODEL)
 splitter = SentenceSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
+
+def bootstrap_db():
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        
+        cursor.execute("PRAGMA journal_mode = WAL;")
+        cursor.execute(""" CREATE TABLE IF NOT EXISTS ingested_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT NOT NULL,
+            course TEXT NOT NULL,
+            status TEXT NOT NULL,
+            ingested_at TEXT NOT NULL,
+            UNIQUE(filename, course)
+            )
+        """)
+
+    conn.close()
+
+bootstrap_db()
 
 def get_course_tag(pdf_path: Path,pdf_root: Path = PDF_DIR) -> str:
     resolved_path = pdf_path.resolve()
@@ -71,7 +95,20 @@ def ingest_pdf(pdf_path: Path, course_tag: str | None = None):
     
     ingested_at = datetime.now(timezone.utc).isoformat()
     
-    texts = [node.get_content() for node in nodes]
+    # texts = [node.get_content() for node in nodes]
+    # Updated to filter out any chunks with less than 10 chars (MIN_CHUNK_CHARS)
+    kept_nodes = []
+    texts = []
+    for node in nodes:
+        text = node.get_content()
+        if len(text.strip()) < MIN_CHUNK_CHARS:
+            page = node.metadata.get("page_label", "unknown")
+            print(f"  Skipping empty/near-empty chunk on page {page} ({len(text.strip())} chars)")
+            continue
+        kept_nodes.append(node)
+        texts.append(text) 
+
+    # nodes = kept_nodes
     prefixed_texts = [f'passage: {t}' for t in texts]
     all_vectors = model.encode(prefixed_texts, batch_size=BATCH_SIZE).tolist()
     
@@ -96,6 +133,18 @@ def ingest_pdf(pdf_path: Path, course_tag: str | None = None):
     client.upsert(collection_name=COLLECTION, points=points)
     print(f"upserted {len(points)} point(s) to the collection")
     
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                           INSERT OR REPLACE INTO ingested_log (filename, course, status, ingested_at)
+                           VALUES (?, ?, ?, ?)
+                           """, 
+                           (pdf_path.name, course_tag, "COMPLETED", ingested_at))
+        conn.close()
+    except Exception as e:
+        print(f"[WARNING] Qdrant upsert succeeded, but SQLite ledger write failed for '{pdf_path.name}': {e}")
+        
 def ingest_all():
     pdfs = sorted(PDF_DIR.rglob("*.pdf"))
     
