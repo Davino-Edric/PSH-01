@@ -105,4 +105,27 @@ pointing to the same page even though it's content are different; Bug was found 
 Context: This part of the update for PSH-01 is designed to accommodate for PSH-02 design which needs Milestone 4 and 5 to work properly.
 This ledger is a "trigger" for PSH-02 system to see which documents are embedded into the Collection and to retrieve their payload.
 
+- Created psh_ledger.db on data in project directory
+- Edited Ingest.py to create table on psh_ledger.db, and insert data relating to a filename's ingestion (filename,course_tag,status,timestamp)
+- Created a test script to select rows from ingested_log table in psh_ledger.db
+
+test result: Successfully selected log about all documents that've been ingested
+
+# v1.1 End-Log: Bug Hunting, Polishing, Edge-case testing, and plans for future development
+
+## Bug Hunting:
+
+- Point-ID scheme is fragile to any change in which chunks survive splitting, not just filename/folder renames
+- Chunk skipping may trigger an orphaning of an already existing old points from the same documents without overwriting them (201 -> 323 -> 193)
+
+## Polishing:
+
+- Added a page skip function in ingestion script to avoid chunking pages that's have less than 10 chars
+
+## Edge-case testing:
+
+- cross_lingual_test.py is created to test retrieval of certain keywords in english and how it works
+
+result: 2/4 Test passed with, the 2 failures returned value from bibliography / reference list for said information
+
 
