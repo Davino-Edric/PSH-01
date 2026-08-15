@@ -51,22 +51,25 @@ test_cases = [
     {"question": "What technique involves designing effective prompts for large language models?", "correct_idx": 21},
     {"question": "How does temperature affect LLM generation?", "correct_idx": 22},
 ]
+# Legacy nomic-ebmed-text declaration
+# def ollama_embed(text):
+#     resp = requests.post(
+#         "http://localhost:11434/api/embeddings",
+#         json={"model": "nomic-embed-text", "prompt": text}
+#     )
+#     return resp.json()["embedding"]
 
-def ollama_embed(text):
-    resp = requests.post(
-        "http://localhost:11434/api/embeddings",
-        json={"model": "nomic-embed-text", "prompt": text}
-    )
-    return resp.json()["embedding"]
 
-
-def run_test(embed_fn, label):
+def run_test(chunk_embed_fn, label,query_embed_fn=None):
+    if query_embed_fn is None:
+        query_embed_fn = chunk_embed_fn
+        
     print(f"\n=== {label} ===")
-    chunk_vecs = np.array([embed_fn(c) for c in chunks])
+    chunk_vecs = np.array([chunk_embed_fn(c) for c in chunks])
 
     correct = 0
     for case in test_cases:
-        q_vec = np.array(embed_fn(case["question"])).reshape(1, -1)
+        q_vec = np.array(chunk_embed_fn(case["question"])).reshape(1, -1)
         sims = cosine_similarity(q_vec, chunk_vecs)[0]
         ranked_idx = np.argsort(sims)[::-1]  # highest similarity first
         top1 = ranked_idx[0]
@@ -85,8 +88,8 @@ def run_test(embed_fn, label):
     return correct
 
 
-# Run both
-ollama_correct = run_test(ollama_embed, "nomic-embed-text")
+# Legacy nomic-embed-text retrieval test
+# ollama_correct = run_test(ollama_embed, "nomic-embed-text")
 
-hf_model = SentenceTransformer("BAAI/bge-small-en-v1.5")
-hf_correct = run_test(lambda t: hf_model.encode(t), "bge-small-en-v1.5")
+hf_model = SentenceTransformer("intfloat/multilingual-e5-base")  # Changed from Beijing Academy's bge-small-en to e5-base
+hf_correct = run_test(lambda t: hf_model.encode(f'passage: {t}'), "intfloat/multilingual-e5-base", query_embed_fn=lambda t: hf_model.encode(f'query: {t}'))  # Changed from Beijing Academy's bge-small-en to e5-base

@@ -9,10 +9,10 @@ OLLAMA_MODEL = "qwen2.5:3b-instruct-q4_K_M"
 TOP_K = 5
 
 client = QdrantClient(host="localhost", port=6333)
-model  = SentenceTransformer("BAAI/bge-small-en-v1.5")
+model  = SentenceTransformer("intfloat/multilingual-e5-base") # Changed from Beijing Academy's bge-small-en to e5-base
 
 def retrieve(question: str, top_k: int = TOP_K):
-    query_vector = model.encode(question).tolist()
+    query_vector = model.encode(f"query: {question}").tolist() # Added query prefix for query
 
     return client.query_points(
         collection_name=COLLECTION,

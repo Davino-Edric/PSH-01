@@ -2,6 +2,8 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+import sqlite3
+
 from llama_index.core import SimpleDirectoryReader
 from llama_index.core.node_parser import SentenceSplitter
 from sentence_transformers import SentenceTransformer
@@ -12,15 +14,57 @@ PDF_DIR = Path("data/pdfs")
 COLLECTION = "PSH-01_Documents"
 CHUNK_SIZE = 512
 CHUNK_OVERLAP = 50
-EMBED_MODEL = "BAAI/bge-small-en-v1.5"
+MIN_CHUNK_CHARS = 10
+EMBED_MODEL = "intfloat/multilingual-e5-base" # Changed from Beijing Academy's bge-small-en to e5-base
+BATCH_SIZE = 16
+DB_PATH = Path("data/psh_ledger.db")
 
 client = QdrantClient(host="localhost", port=6333)
 model = SentenceTransformer(EMBED_MODEL)
 splitter = SentenceSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
 
+def bootstrap_db():
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        
+        cursor.execute("PRAGMA journal_mode = WAL;")
+        cursor.execute(""" CREATE TABLE IF NOT EXISTS ingested_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT NOT NULL,
+            course TEXT NOT NULL,
+            status TEXT NOT NULL,
+            ingested_at TEXT NOT NULL,
+            UNIQUE(filename, course)
+            )
+        """)
+
+    conn.close()
+
+bootstrap_db()
+
+def get_course_tag(pdf_path: Path,pdf_root: Path = PDF_DIR) -> str:
+    resolved_path = pdf_path.resolve()
+    resolved_root = pdf_root.resolve()
+    
+    try:
+        relative_path = resolved_path.relative_to(resolved_root)
+    except ValueError:
+        return "uncategorized"
+    
+    parts = relative_path.parts
+    if len(parts) > 2:
+        print(f'WARNING! DEEP NESTING FOR Course Tag:{pdf_path.name}, using {parts[0]}')
+        return parts[0]
+    elif len(parts) <= 1:
+        return 'uncategorized'
+    else:
+        return parts[0]
+    
+
 # Making a unique point ID based on filename, page number, and chunk index (So if re-ingested, it will overwrite the previous point)
-def make_point_id(filename: str, page: int, chunk_index: int) -> str:
-    return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{filename}_{page}_{chunk_index}"))
+def make_point_id(course_tag: str, filename: str, page: int, chunk_index: int) -> str:
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{course_tag}_{filename}_{page}_{chunk_index}"))
 
 def is_front_matter(page_label: str) -> bool:
     roman = {"i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x"}
@@ -28,7 +72,9 @@ def is_front_matter(page_label: str) -> bool:
 
 # In ingest_pdf(), after loading docs:
 
-def ingest_pdf(pdf_path: Path):
+def ingest_pdf(pdf_path: Path, course_tag: str | None = None):
+    if course_tag is None:
+        course_tag = get_course_tag(pdf_path=pdf_path)
     docs = SimpleDirectoryReader(input_files=[str(pdf_path)]).load_data()
     print(f"  Loaded {len(docs)} page(s) before filtering")
 
@@ -48,18 +94,35 @@ def ingest_pdf(pdf_path: Path):
     print(f"split into {len(nodes)} chunk(s)")
     
     ingested_at = datetime.now(timezone.utc).isoformat()
+    
+    # texts = [node.get_content() for node in nodes]
+    # Updated to filter out any chunks with less than 10 chars (MIN_CHUNK_CHARS)
+    kept_nodes = []
+    texts = []
+    for node in nodes:
+        text = node.get_content()
+        if len(text.strip()) < MIN_CHUNK_CHARS:
+            page = node.metadata.get("page_label", "unknown")
+            print(f"  Skipping empty/near-empty chunk on page {page} ({len(text.strip())} chars)")
+            continue
+        kept_nodes.append(node)
+        texts.append(text) 
+
+    # nodes = kept_nodes
+    prefixed_texts = [f'passage: {t}' for t in texts]
+    all_vectors = model.encode(prefixed_texts, batch_size=BATCH_SIZE).tolist()
+    
     points = []
     
-    for i, node in enumerate(nodes):
-        text = node.get_content()
-        vectors = model.encode(text).tolist()
+    for i, (node, text,vectors) in enumerate(zip(nodes,texts,all_vectors)):
         page = node.metadata.get("page_label", "unknown")  # Assuming the metadata has a page label; adjust as necessary
         
         points.append(PointStruct(
-            id=make_point_id(pdf_path.name,page,i),
+            id=make_point_id(course_tag, pdf_path.name, page, i),
             vector=vectors,
             payload={
                 "filename": pdf_path.name,
+                "course": course_tag,
                 "page":page,
                 "chunk_index": i,
                 "chunk_text": text,
@@ -70,8 +133,20 @@ def ingest_pdf(pdf_path: Path):
     client.upsert(collection_name=COLLECTION, points=points)
     print(f"upserted {len(points)} point(s) to the collection")
     
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                           INSERT OR REPLACE INTO ingested_log (filename, course, status, ingested_at)
+                           VALUES (?, ?, ?, ?)
+                           """, 
+                           (pdf_path.name, course_tag, "COMPLETED", ingested_at))
+        conn.close()
+    except Exception as e:
+        print(f"[WARNING] Qdrant upsert succeeded, but SQLite ledger write failed for '{pdf_path.name}': {e}")
+        
 def ingest_all():
-    pdfs = sorted(PDF_DIR.glob("*.pdf"))
+    pdfs = sorted(PDF_DIR.rglob("*.pdf"))
     
     if not pdfs:
         print(f"No PDFs found in {PDF_DIR}:")

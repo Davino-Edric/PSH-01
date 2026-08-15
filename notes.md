@@ -38,3 +38,94 @@
 - accept_multiple_files=True changes uploaded_file into a list; wrapped each
   file's ingest_pdf() call in its own try/except so one bad file doesn't halt
   the batch.
+
+# v.1.1 Milestone logs
+
+## Milestone 1: Benchmarking and profiling of bge-small-en-1.5 vs multilingual-e5-base
+
+Context: Tested on a 51 page sample pdf about machine learning terms that are mixed language (AI Generated, still yet to find a proper messy mixed-language journal / paper) seeded from term_pairs.json (both documents are on data/profiling)
+
+- Steady state latency is 1.82-1.85x of bge-small-en's steady state latency
+- Idle RAM sits at 337MiB, way smaller than the expected boundary of 1.5GiB
+- Peak system RAM usage reaches 99% for all runs of e5-base, reaching 15.34-15.4 out of 15.41 GiB of RAM
+- A static term pair test based on term_pairs.json was used as a nother form of accuracy check 
+  for the two embedding models. bge-small-en-1.5 got 6/12 term pairs correct, whilst e5-base got 11/12 pairs correct,
+  of which the misses on e5-base was a near-miss with only 0.0081 margin
+
+Verdict: Pass with documented caveats, proceeding to Milestone 2:
+
+## Milestone 2: Changing the Qdrant collection to use 768 dims size (previously 384, this is related to bge-small and e5-base dimension size)
+
+Context: To accommodate for e5-base 768 dimension size, the collection must be dropped and recreated with 768 dimension size change.
+
+Verdict: Pass, dropped previous collection along with any points upserted into it.
+
+## Milestone 3: Changing the pipeline scripts to use e5-base
+
+Context: To use e5-base, ingest.py and query.py must be given a prefix of passage and query respectively
+and also given a batch size (16 in this case).
+
+- query.py logged changes: Changed embedding models, added prefix to query in retrieve()
+- changed the ingestion to a per node-loop that collect the node then batch encode it
+- prefix only used for encoding only, no prefix ever gets into the LLM / Citations 
+- Result: 13/15, and — worth being specific here rather than just "sometimes bleeds" 
+both misses ranked #2 by a narrow margin (~0.01–0.02), not buried
+- Both misses are the same failure shape: the question didn't specify the distinguishing detail between two topically-adjacent chunks
+- e5-base is tested on only english when it's supposed to be cross language indo-eng, however it's ability on a 50 page profiling proves it works okay with cross language
+
+## Milestone 4: Inferring course_tag from subfolder within root folder (data/pdfs/course_tag/xxx.pdf)
+
+Context: Getting course_tag to be added as a metadata in the Qdrant paylouad, this little update aims to adds more context to the chunks payload. This milestone is mostly to accommodate for PSH-02, Obsidian Brain Graph, need for clustering and summarizing topics across documents.
+
+- created a new function get_course_tag() to scan folders within root dir to get course name (mainly a path extraction function)
+- make ingest_pdf() to have course_tag params and updated make_point_id() to include the course_tag for the point id (and subsequently changed the PointStruct that uses make_point_id())
+- ingest_all() got a glob -> rglob change, nothing more
+
+### Milestone 4 Test: Putting different documents on edge-cases of different folders
+
+Objective of test:
+- Collision test: Same document name, different folder directory collision check (make sure they're tagged different and not trashed, having different uuid5 too)
+- Deep nesting, if there's another folder inside a course_tag folder(i.e pdfs/course_tag/deep_folder/materials.pdf), it will warn of deep nesting
+and label the materials based on the course_tag not based on deep_folder.
+- Root level document (placed in pdfs, not pdfs/course_folder) is categorized as "uncategorized"
+
+Test Result:
+- Collision test: success, behaved as should be
+- Deep Nesting test: success, behaved as should be
+- Root Level category test: success, behaved as should be
+
+note: there's some bug left over from Milestone 4 which will be reviewed again after Milestone 5 is finished. Of which teh details of bug include:
+- Citation offset (when manually reviewing citations to source, page may drift 5-10~ pages); This bug was found during citation source inspection
+- Same printed number, different actual pages (mutiple pages having the same page number at the bottom of the page, misprint) will make some vectors
+pointing to the same page even though it's content are different; Bug was found when inspecitng collection under visualization using Qdrant Dashboard (observed a cluster of point with empty text payload)
+- Undetected text, Some Code Snippets and Graphical text aren't scanned and taken as text for points payload; Bug was found when inspecting collection under visualization using Qdrant Dashboard (observed a cluster of point with empty text payload)
+
+## Milestone 5: Creating SQLite ledger to keep track of which documents have been successfully embedded and stored in the Collection
+
+Context: This part of the update for PSH-01 is designed to accommodate for PSH-02 design which needs Milestone 4 and 5 to work properly.
+This ledger is a "trigger" for PSH-02 system to see which documents are embedded into the Collection and to retrieve their payload.
+
+- Created psh_ledger.db on data in project directory
+- Edited Ingest.py to create table on psh_ledger.db, and insert data relating to a filename's ingestion (filename,course_tag,status,timestamp)
+- Created a test script to select rows from ingested_log table in psh_ledger.db
+
+test result: Successfully selected log about all documents that've been ingested
+
+# v1.1 End-Log: Bug Hunting, Polishing, Edge-case testing, and plans for future development
+
+## Bug Hunting:
+
+- Point-ID scheme is fragile to any change in which chunks survive splitting, not just filename/folder renames
+- Chunk skipping may trigger an orphaning of an already existing old points from the same documents without overwriting them (201 -> 323 -> 193)
+
+## Polishing:
+
+- Added a page skip function in ingestion script to avoid chunking pages that's have less than 10 chars
+
+## Edge-case testing:
+
+- cross_lingual_test.py is created to test retrieval of certain keywords in english and how it works
+
+result: 2/4 Test passed with, the 2 failures returned value from bibliography / reference list for said information
+
+

@@ -8,7 +8,7 @@ COLLECTION_NAME = "PSH-01_Documents"
 client.recreate_collection(
     collection_name=COLLECTION_NAME,
     vectors_config=VectorParams(
-        size=384, #small-bge-en-v1.5 embedding size
+        size=768, # now mathces e5-base
         distance=Distance.COSINE
     )
 )
