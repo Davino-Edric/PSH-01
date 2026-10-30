@@ -108,7 +108,7 @@ def ingest_pdf(pdf_path: Path, course_tag: str | None = None):
         kept_nodes.append(node)
         texts.append(text) 
 
-    # nodes = kept_nodes
+    nodes = kept_nodes
     prefixed_texts = [f'passage: {t}' for t in texts]
     all_vectors = model.encode(prefixed_texts, batch_size=BATCH_SIZE).tolist()
     
@@ -145,6 +145,7 @@ def ingest_pdf(pdf_path: Path, course_tag: str | None = None):
     except Exception as e:
         print(f"[WARNING] Qdrant upsert succeeded, but SQLite ledger write failed for '{pdf_path.name}': {e}")
         
+        
 def ingest_all():
     pdfs = sorted(PDF_DIR.rglob("*.pdf"))
     
@@ -162,3 +163,4 @@ def ingest_all():
 
 if __name__ == "__main__":
     ingest_all()
+    
