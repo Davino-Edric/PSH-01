@@ -98,4 +98,4 @@ This repository stays as the reference implementation and proof of concept — t
 ## Update on Production RAG Development
 
 I'm currently developing a brand new, production-ready, RAG system that will incorporate many of the technologies used here with additional standard production-RAG engineering decisions like reranking, Hybrid Search (Semantic and Lexical), and 
-better citations. For full details go to github.com/Davino-Edric/rag-system once the repository becomes public!b
+better citations. For full details go to github.com/Davino-Edric/rag-system once the repository becomes public!
